@@ -2,60 +2,61 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
 #include <ctype.h>
+#include <direct.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <ws2tcpip.h>
+#include <process.h>
+#include <winerror.h>
+#include <winsock2.h>
 
-#ifndef __WIN32__
-    #if defined(_WIN32) || defined(WIN32)
-        #define __WIN32__
-    #endif
+#define EST_VERSION "1.0"
+
+#define EST_ARCH_UNIX 1
+#define EST_ARCH_WIN32 2
+
+#if defined(__unix__)
+#define EST_ARCH EST_ARCH_UNIX
+#elif defined(_WIN32)
+#define EST_ARCH EST_ARCH_WIN32
 #endif
 
-#ifdef __WIN32__
-    #ifdef __cplusplus
-        extern "C"
-        {
-    #endif
+#define BUFF_SIZE_FILENAME FILENAME_MAX
+#define BUFF_SIZE_DATA 32 /* struct mg_connection :: data size */
+#define BUFF_SIZE_DATA 32 // struct mg_connection :: data size
 
-    extern int access(const char *path, int mode);
+#define EST_TIMER_ONCE 0    // Call function once
+#define EST_TIMER_REPEAT 1  // Call function periodically
+#define EST_TIMER_RUN_NOW 2 // Call immediately when timer is set
 
-    #ifdef __cplusplus
-        }
-    #endif
-#else
-    #include <unistd.h>
-#endif
+typedef struct tagTimer Timer_t;
 
-/* #define PRIVATE static */
-#define PRIVATE
-
-#ifdef TEST
-    #define MAXRHS 5 /* Set low to exercise exception code */
-#else
-    #define MAXRHS 1000
-#endif
-
-
-#define ISSPACE(X) isspace((unsigned char)(X))
-#define ISDIGIT(X) isdigit((unsigned char)(X))
-#define ISALNUM(X) isalnum((unsigned char)(X))
-#define ISALPHA(X) isalpha((unsigned char)(X))
-#define ISUPPER(X) isupper((unsigned char)(X))
-#define ISLOWER(X) islower((unsigned char)(X))
-
-#define lemonStrlen(X) ((int)strlen(X))
-
-typedef enum
+struct tagTimer
 {
-    LEMON_FALSE = 0,
-    LEMON_TRUE
-} Boolean;
+    unsigned long id;      // Timer ID
+    uint64_t period_ms;    // Timer period in milliseconds
+    uint64_t expire;       // Expiration timestamp in milliseconds
+    unsigned flags;        // Possible flags values below
+    void (*fn)(void *);    // Function to call
+    void *arg;             // Function argument
+    Timer_t *next; // Linkage
+};
 
-#include "utils.h"
-#include "options.h"
+#include "str.h"
+#include "iobuf.h"
+#include "log.h"
 
 #endif
