@@ -1,3 +1,5 @@
+#include "common/common.h"
+#include "core/core.h"
 
 int main(int argc, char **argv)
 {
@@ -100,15 +102,15 @@ int main(int argc, char **argv)
         lem.symbols[i]->index = i;
     }
 
-    while( lem.symbols[i-1]->type==MULTITERMINAL )
+    while (MULTITERMINAL == lem.symbols[i-1]->type)
     { 
         i--; 
     }
 
-    assert( strcmp(lem.symbols[i-1]->name,"{default}")==0 );
+    assert(strcmp(lem.symbols[i-1]->name, "{default}") == 0);
 
     lem.nsymbol = i - 1;
-    for (i=1; ISUPPER(lem.symbols[i]->name[0]); i++)
+    for (i = 1; ISUPPER(lem.symbols[i]->name[0]); i++)
     {
 
     }
@@ -135,9 +137,7 @@ int main(int argc, char **argv)
 
     lem.startRule = lem.rule;
     lem.rule = Rule_sort(lem.rule);
-
-    /* Generate a reprint of the grammar, if requested on the command line */
-    if ( rpflag ) 
+    if (rpflag) /* Generate a reprint of the grammar, if requested on the command line */
     {
         Reprint(&lem);
     }
