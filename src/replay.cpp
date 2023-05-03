@@ -61,19 +61,17 @@ bool FileCanchannel::openFile(std::string filepath, std::function<void(Canframe 
             }
 
             line = readLine(file);
-            if (!parseCanframe(line, frame))
+            if (true == parseCanframe(line, frame))
             {
                 try
                 {
-                    m_callback(NULL);
+                    m_callback(&frame);
                 }
                 catch(const std::exception& e)
                 {
                     logd("Run file replay callback exception catched:[%s]!", e.what());
                 }
                 
-                
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
             else
