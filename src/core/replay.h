@@ -1,19 +1,12 @@
 
-#include <stdlib.h>
-#include <string.h>
+#ifndef REPLAY_H
+#define REPLAY_H
 
-#include <string>
-#include <fstream>
-#include <queue>
-#include <mutex>
-#include <chrono>
-#include <thread>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <sstream>
+#include "common.h"
 
-using namespace std;
+/* 每行最大长度 */
+#define REPLAY_LINE_MAX 1024
+typedef std::shared_ptr<FILE *> FilePtr;
 
 template <typename T>
 class LockedQueue
@@ -79,11 +72,14 @@ public:
     bool replay();
 
 private:
+    std::string readLine(FilePtr file);
     bool parseCanframe(std::string &line, Canframe &frame);
 
     /* data */
+    FilePtr m_file;
     std::shared_ptr<RunState_E> m_state;
-    std::shared_ptr<FILE *> m_file;
     std::shared_ptr<LockedQueue<Canframe>> m_buffer;
     std::function<void(Canframe *)> m_callback;
 };
+
+#endif

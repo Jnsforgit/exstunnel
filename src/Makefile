@@ -1,22 +1,34 @@
-# 定义编译器
-CC=gcc
-# 定义编译选项
-CFLAGS=-Wall -Wextra -O2
-# 定义目标文件
-TARGET=exstunnel.exe
-# 查找并获取所有的 .c 文件
-SRCS=$(wildcard *.c)
-# 将所有的 .c 文件转化为 .o 文件
-OBJS=$(SRCS:.c=.o)
+# Function to recursively search directory and sub-directory for target files matching the pattern
+rwildcard	= $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
-# 定义默认目标
+CC 			= gcc
+CXX 		= g++
+CFLAGS 		= -Wall -O2 -g
+CXXFLAGS 	= -Wall -O2 -std=c++11 -g
+LDFLAGS 	=
+INC_DIR 	= -I./src/easylogger/inc
+OBJDIR 		= ./bin
+SRCS 		:= $(call rwildcard,src,*.c)
+SRCS 		+= $(call rwildcard,src,*.cpp)
+OBJS 		:= $(SRCS:.c=.o)
+OBJS		:= $(OBJS:.cpp=.o)
+AFILE		= core easylogger
+AOBJS		:= $(SRCS:.c=.o)
+TARGET 		:= app.exe
+
+.PHONY: all
 all: $(TARGET)
-# 生成可执行文件
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $^
-# 依次生成所有的 .o 文件
-%.o: %.c Makefile
-	$(CC) $(CFLAGS) -c -o $@ $<
-# 清除编译生成的文件
+$(TARGET): $(OBJDIR)/%.a
+	$(CXX) $(LDFLAGS) $^ -o $(OBJDIR)/$@
+
+AFILE : $(OBJDIR)/$(OBJS)
+
+%.o : %.c
+	$(CC) $(CFLAGS) $(INC_DIR) -c $< -o $(OBJDIR)/$@
+%.o : %.cpp
+	$(CXX) $(CXXFLAGS) $(INC_DIR) -c $< -o $(OBJDIR)/$@
+
+.PHONY: clean
 clean:
-	rm -f $(TARGET) $(OBJS)
+	$(RM) $(OBJDIR)/$(OBJS) $(OBJDIR)/$(TARGET)
+
