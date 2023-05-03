@@ -19,7 +19,7 @@
 
 #include <windows.h>
 
-#include <elog.h>
+#include "log.h"
 
 using namespace std;
 #include "utils.h"

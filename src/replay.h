@@ -6,7 +6,6 @@
 
 /* 每行最大长度 */
 #define REPLAY_LINE_MAX 1024
-typedef std::shared_ptr<FILE *> FilePtr;
 
 template <typename T>
 class LockedQueue
@@ -61,6 +60,17 @@ typedef enum tagRunState
     RunState_run
 } RunState_E;
 
+typedef struct tagReplayFile
+{
+    FILE *fptr;
+    RunState_E state;
+
+    tagReplayFile() : fptr(NULL), state(RunState_stop)
+    {
+
+    }
+}ReplayFile_T;
+
 class FileCanchannel
 {
 
@@ -72,14 +82,13 @@ public:
     bool replay();
 
 private:
-    std::string readLine(FilePtr file);
+    std::string readLine(std::shared_ptr<ReplayFile_T> &file);
     bool parseCanframe(std::string &line, Canframe &frame);
 
     /* data */
-    FilePtr m_file;
-    std::shared_ptr<RunState_E> m_state;
-    std::shared_ptr<LockedQueue<Canframe>> m_buffer;
+    std::shared_ptr<ReplayFile_T> m_file;
     std::function<void(Canframe *)> m_callback;
+    std::shared_ptr<LockedQueue<Canframe>> m_buffer;
 };
 
 #endif

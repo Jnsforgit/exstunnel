@@ -58,7 +58,7 @@ unsigned long long timestrToUint64(const std::string &time_str)
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
+        logd("Exchange time string [%s] error:[%s]!", time_str.c_str(), e.what());
         return 0;
     }
 }

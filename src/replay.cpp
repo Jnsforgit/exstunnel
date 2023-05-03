@@ -5,14 +5,13 @@
 
 FileCanchannel ::FileCanchannel(/* args */)
 {
-    m_state = std::make_shared<RunState_E>(RunState_stop);
     m_buffer = std::make_shared<LockedQueue<Canframe>>();
-    m_file = std::make_shared<FILE *>();
+    m_file = std::make_shared<ReplayFile_T>();
 }
 
 FileCanchannel ::~FileCanchannel()
 {
-    *m_state = RunState_stop;
+    m_file->state = RunState_stop;
 }
 
 bool FileCanchannel::openFile(std::string filepath, std::function<void(Canframe *)> callback)
@@ -25,40 +24,43 @@ bool FileCanchannel::openFile(std::string filepath, std::function<void(Canframe 
         return false;
     }
 
-    if (NULL != m_file.get()) /* 已经打开一个文件了 */
+    if (NULL != m_file->fptr) /* 已经打开一个文件了 */
     {
-        fclose((FILE *)m_file.get());
-        *m_state = RunState_stop;
+        logd("Close last opened file!");
+        fclose(m_file->fptr);
+        m_file->state = RunState_stop;
         m_file.reset();
     }
 
-    *m_file = fp;
-
+    fseek(fp, 0, SEEK_SET);
+    m_file->fptr = fp;
     std::thread thd([&]() {
-        std::shared_ptr<RunState_E> state = m_state;
-        FilePtr file = m_file;
+        std::shared_ptr<ReplayFile_T> file = m_file;
         std::shared_ptr<LockedQueue<Canframe>> buffer = m_buffer;
 
+        m_file->state  = RunState_run;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        *m_state = RunState_run;
-        while (RunState_stop < *state)
+        logi("Start file read thread ...");
+        while (RunState_stop < m_file->state)
         {
             Canframe frame;
             std::string line = "";
 
-            if (0 == feof((FILE *)m_file.get()))
+            if (NULL != m_file->fptr && feof(m_file->fptr))
             {
-                *state = RunState_stop;
+                logd("Read file eof!");
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                file->state = RunState_stop;
                 continue;
             }
-            
+
             if (500 < buffer->size())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
 
-            line = readLine(m_file);
+            line = readLine(file);
             if (!parseCanframe(line, frame))
             {
                 try
@@ -67,21 +69,26 @@ bool FileCanchannel::openFile(std::string filepath, std::function<void(Canframe 
                 }
                 catch(const std::exception& e)
                 {
-                    // std::cerr << e.what() << '\n';
+                    logd("Run file replay callback exception catched:[%s]!", e.what());
                 }
                 
                 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
+            else
+            {
+                logd("Parse can frame from line error:[%s]!", line.c_str());
+            }
 
             buffer->push(frame);
         } 
 
-        if (NULL != m_file.get())
+        if (!file)
         {
-            fclose((FILE *)m_file.get());
-            *m_state = RunState_stop;
+            fclose(file->fptr);
+            file->state = RunState_stop;
+            logi("Exiting file replay thread.");
         } 
     });
 
@@ -93,8 +100,9 @@ bool FileCanchannel::openFile(std::string filepath, std::function<void(Canframe 
 
 bool FileCanchannel::replay()
 {
-    if (*m_state == RunState_stop)
+    if (m_file->state == RunState_stop)
     {
+        logi("File replay thread is not running.");
         return false;
     }
 
@@ -109,14 +117,14 @@ bool FileCanchannel::replay()
     return true;
 }
 
-std::string FileCanchannel::readLine(FilePtr file)
+std::string FileCanchannel::readLine(std::shared_ptr<ReplayFile_T> &file)
 {
     std::string line;
     char *buf = NULL;
     size_t buf_size = 0;
     for (;;)
     {
-        int ch = fgetc((FILE *)file.get());
+        int ch = fgetc(file->fptr);
         switch (ch)
         {
             case EOF:
@@ -163,12 +171,13 @@ bool FileCanchannel::parseCanframe(std::string &line, Canframe &frame)
     }
     catch (const std::exception &e)
     {
-        std::cerr << e.what() << " error:[" << line << "]" << std::endl;
+        logd("Exchange line [%s] error:[%s]!", line.c_str(), e.what());
         return false;
     }
 
     if (0 == frame.id || 0 == frame.timestamp || 0 == frame.dlc)
     {
+        logd("Bad can frame params:[%d:%d:%d]!", frame.id, frame.timestamp, frame.dlc);
         return false;
     }
 
