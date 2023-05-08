@@ -45,6 +45,7 @@ private:
     mutable std::mutex m_mutex;
 };
 
+namespace exstunnel {
 struct Canframe
 {
     unsigned int id;
@@ -90,5 +91,5 @@ private:
     std::function<void(Canframe *)> m_callback;
     std::shared_ptr<LockedQueue<Canframe>> m_buffer;
 };
-
+}
 #endif

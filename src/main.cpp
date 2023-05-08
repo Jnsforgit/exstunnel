@@ -1,6 +1,8 @@
 #include "common.h"
 #include "replay.h"
 
+using namespace exstunnel;
+
 int main()
 {
     static int count = 0;
@@ -33,7 +35,7 @@ int main()
         fmt << frame->timestamp % 1000000;
         fmt << " ["
             << "0x" << std::hex << frame->id << "] ";
-        fmt << " " << bytesToHexString(frame->data, frame->dlc);
+        fmt << " " << utils::bytesToHexString(frame->data, frame->dlc);
 
         // std::cout << fmt.str() << std::endl;
     });

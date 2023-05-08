@@ -3,6 +3,7 @@
 
 #include <time.h>
 
+namespace exstunnel {
 FileCanchannel ::FileCanchannel(/* args */)
 {
     m_buffer = std::make_shared<LockedQueue<Canframe>>();
@@ -158,14 +159,14 @@ std::string FileCanchannel::readLine(std::shared_ptr<ReplayFile_T> &file)
 
 bool FileCanchannel::parseCanframe(std::string &line, Canframe &frame)
 {
-    auto parts = split(line, ",");
+    auto parts = utils::split(line, ",");
 
     memset(frame.data, 0x00, sizeof(frame.data));
     try
     {
         frame.id = std::stoi(parts[0], nullptr);
         frame.dlc = std::stoi(parts[3], nullptr);
-        frame.timestamp = timestrToUint64(parts[1]);
+        frame.timestamp = utils::timestrToUint64(parts[1]);
     }
     catch (const std::exception &e)
     {
@@ -179,7 +180,8 @@ bool FileCanchannel::parseCanframe(std::string &line, Canframe &frame)
         return false;
     }
 
-    strToCharArray(parts[2], frame.data, frame.dlc);
+    utils::strToCharArray(parts[2], frame.data, frame.dlc);
 
     return true;
+}
 }
